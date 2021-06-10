@@ -38,8 +38,10 @@
                         data-bs-parent="#listSessions">
                         <div class="accordion-body">
                             <p>
-                                Moltiplicatori:
-                                <span class="badge bg-primary rounded-pill ms-3" v-for="mult in result.value[2].mult">{{ mult | round(2) }}</span>
+                                <!-- Moltiplicatori: -->
+                                <!-- <span class="badge bg-primary rounded-pill ms-3" v-for="mult in result.value[2].mult">{{ mult | round(2) }}</span> -->
+                                Configurazione:
+                                <span class="badge bg-primary rounded-pill ms-3">{{ conf_texts[result.value[2].run_type] }}</span>
                                 <button class="btn btn-danger float-end" @click="deleteAnnotation(result.session_id)"><i class="fas fa-trash-alt"></i></button>
                             </p>
                             <ul class="list-group" v-if="result.value[2].count > 0">
@@ -54,6 +56,9 @@
                 </div>
             </div>
         </div>
+        <div v-else>
+            <p>Non ci sono annotazioni</p>
+        </div>
     </div>
 </template>
 
@@ -63,7 +68,14 @@
             return {
                 results: [],
                 num_pages: 0,
-                this_page: 0
+                this_page: 0,
+                conf_texts: {
+                    "-2": "Molto specifico",
+                    "-1": "Specifico",
+                    "0": "Media",
+                    "1": "Generico",
+                    "2": "Molto generico"
+                }
             };
         },
         filters: {

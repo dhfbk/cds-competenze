@@ -54,27 +54,21 @@
                 </div>
             </div>
 
-            <div class="row row-cols-lg-auto g-3 align-items-center mt-1">
+            <div class="row row-cols-md-auto g-3 align-items-center mt-1">
                 <div class="col-12">
-                    Moltiplicatori:
+                    Più specifico
                 </div>
                 <div class="col-12">
-                    <input type="number" min="0" max="1" step="0.1" v-model="mult[0]" class="form-control">
+                    <input type="range" class="form-range" min="-2" max="2" step="1" v-model="run_type">
                 </div>
                 <div class="col-12">
-                    <input type="number" min="0" max="1" step="0.1" v-model="mult[1]" class="form-control">
+                    Più generico
                 </div>
-                <div class="col-12">
-                    <input type="number" min="0" max="1" step="0.1" v-model="mult[2]" class="form-control">
-                </div>
-                <!--<div class="col-12">
-                    <input type="range" class="form-range" min="-2" max="2" step="1" id="customRange3">
-                </div>-->
 
-                <div class="col-12">
+                <div class="col-12 ms-md-5">
                     Risultati:
                 </div>
-                <div class="col-12">
+                <div class="col-12 col-xs-form-label">
                     <input type="number" min="1" max="50" step="1" v-model="numResults" class="form-control">
                 </div>
 
@@ -136,7 +130,8 @@
     module.exports = {
         data: function() {
             return {
-                "mult": [1.0, 0.9, 0.8],
+                // "mult": [1.0, 0.9, 0.8],                
+                "run_type": 0,
 
                 "text": "",
                 "text_choice": "",
@@ -286,7 +281,7 @@
 
                 var oldThis = this;
                 var pars = {
-                    "mult": this.mult,
+                    "run_type": this.run_type,
                     "text": t,
                     "numResults": this.numResults,
                     "tab": this.selected_tab,
@@ -296,6 +291,8 @@
                 .then(function (data) {
                     var results_tfidf = data.data.values_tfidf.slice(0, oldThis.numResults);
                     var results_sent = data.data.values_sent.slice(0, oldThis.numResults);
+
+                    pars['mult'] = data.data.multipliers;
 
                     for (var i = 0; i < results_tfidf.length; i++) {
                         var o = results_tfidf[i];

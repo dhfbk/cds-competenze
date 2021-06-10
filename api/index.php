@@ -137,8 +137,8 @@ switch ($Action) {
                     $r['created_time'] = $row['created_time'];
                     $r['value'] = json_decode($row['value'], true);
                     $results[] = $r;
-                    $ret['sessions'] = $results;
                 }
+                $ret['sessions'] = $results;
                 break;
 
             case "listSentences":
