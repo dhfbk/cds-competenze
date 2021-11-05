@@ -1,5 +1,18 @@
 <?php
 
+function setLog($user, $action, $id = null) {
+	global $DB;
+
+	$data = [];
+	$data['user'] = $user;
+	$data['action'] = $action;
+	if (!is_null($id)) {
+		$data['related_id'] = $id;
+	}
+
+	return $DB->queryinsert("logs", $data, "log");
+}
+
 function loadOptions() {
 	global $mysqli;
 	
@@ -33,4 +46,9 @@ function find($table, $id, $text) {
 function isValidJSON($str) {
 	json_decode($str);
 	return json_last_error() == JSON_ERROR_NONE;
+}
+
+function endsWith($haystack, $needle) {
+    $length = strlen($needle);
+    return $length > 0 ? substr($haystack, -$length) === $needle : true;
 }

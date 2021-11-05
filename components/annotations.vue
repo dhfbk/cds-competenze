@@ -4,18 +4,34 @@
             Annotazioni
         </h1>
 
+        <div class="card border-secondary mb-3" v-show="loggedInfo.show_help == '1'">
+            <div class="card-header">
+                <i class="fas fa-info-circle"></i>
+            </div>
+            <div class="card-body">
+                <div class="card-text" style="font-size: .8em;">
+                    <p>
+                        Tramite questa schermata è possibile rivedere ed eventualmente annullare le annotazioni
+                        realizzate in precedenza.
+                        Per eliminare un'annotazione è sufficiente cliccare sul tasto
+                        <span class="badge bg-danger"><i class="fas fa-trash-alt"></i></span>.
+                    </p>
+                </div>
+            </div>
+        </div>
+
         <div v-if="results.length > 0">
 
-            <nav aria-label="Page navigation example" v-if="num_pages > 1">
+            <nav v-if="num_pages > 1">
                 <ul class="pagination">
-                    <li v-if="this_page > 0">
+                    <li v-if="this_page > 0" class="page-item">
                         <a class="page-link" href="#" @click.prevent="goToPage(this_page - 1)">&laquo;</a>
                     </li>
                     <li v-for="n in num_pages" class="page-item" :class="{ 'active': n - 1 == this_page }">
                         <span v-if="n - 1 == this_page" class="page-link">{{ n }}</span>
                         <a v-else class="page-link" href="#" @click.prevent="goToPage(n - 1)">{{ n }}</a>
                     </li>
-                    <li v-if="this_page < num_pages - 1">
+                    <li v-if="this_page < num_pages - 1" class="page-item">
                         <a class="page-link" href="#" @click.prevent="goToPage(this_page + 1)">&raquo;</a>
                     </li>
                 </ul>
@@ -37,16 +53,28 @@
                         :aria-labelledby="'sessionHeader' + result.session_id"
                         data-bs-parent="#listSessions">
                         <div class="accordion-body">
+                            <div class="card text-dark bg-light mb-3">
+                                <div class="card-header">Frase analizzata</div>
+                                <div class="card-body">
+                                    <h5 class="card-title">{{ result.value[2].text }}</h5>
+                                    <!-- <p class="card-text">{{ result.value[2].tokens }}</p> -->
+                                </div>
+                            </div>
                             <p>
-                                <!-- Moltiplicatori: -->
-                                <!-- <span class="badge bg-primary rounded-pill ms-3" v-for="mult in result.value[2].mult">{{ mult | round(2) }}</span> -->
-                                Configurazione:
-                                <span class="badge bg-primary rounded-pill ms-3">{{ conf_texts[result.value[2].run_type] }}</span>
+                                <!-- Configurazione: -->
+                                <!-- <span class="badge bg-primary rounded-pill ms-1">{{ conf_texts[result.value[2].run_type] }}</span> -->
+                                <span>Data/ora di creazione: <strong>{{ result.created_time }}</strong></span>
                                 <button class="btn btn-danger float-end" @click="deleteAnnotation(result.session_id)"><i class="fas fa-trash-alt"></i></button>
                             </p>
                             <ul class="list-group" v-if="result.value[2].count > 0">
-                                <li class="list-group-item list-group-item-success" v-for="o in result.value[2].yes_results">{{ o.text }}</li>
-                                <li class="list-group-item list-group-item-danger" v-for="o in result.value[2].no_results">{{ o.text }}</li>
+                                <li class="list-group-item list-group-item-success" v-for="(o, index) in result.value[2].yes_results">
+                                    <!-- <span class="badge bg-primary rounded-pill me-1">{{ result.value[2].yes_types[index] | yesno_type }}</span> -->
+                                    {{ o.text }}
+                                </li>
+                                <li class="list-group-item list-group-item-danger" v-for="(o, index) in result.value[2].no_results">
+                                    <!-- <span class="badge bg-primary rounded-pill me-1">{{ result.value[2].no_types[index] | yesno_type }}</span> -->
+                                    {{ o.text }}
+                                </li>
                             </ul>
                             <div v-else>
                                 Non ci sono annotazioni.
@@ -79,6 +107,14 @@
             };
         },
         filters: {
+            yesno_type: function(value) {
+                if (value == "0") {
+                    return "TF-IDF";
+                }
+                else {
+                    return "Sentence vectors"
+                }
+            },
             limit: function(value, limit) {
                 if (value.length > limit) {
                     value = value.substring(0, limit) + " [...]";
@@ -112,9 +148,12 @@
         mounted: function() {
             this.goToPage(0);
         },
-        props: ["axiosApi"],
+        props: ["axiosApi", "loggedInfo"],
         methods: {
             deleteAnnotation: function(session_id) {
+                if (!confirm("Sei sicuro di voler eliminare questa annotazione? L'operazione è irreversibile.")) {
+                    return;
+                }
                 var oldThis = this;
                 this.axiosApi.post("?action=deleteSession", {
                     session_id: session_id
@@ -126,17 +165,19 @@
                     else {
                         oldThis.goToPage(oldThis.this_page);
                     }
+                    oldThis.axiosApi.get("?action=getLoginInfo", {});
                 });
             },
             goToPage: function(pageNum) {
                 var oldThis = this;
                 this.axiosApi.get("?action=getAnnotations&page=" + pageNum)
                 .then(function(data) {
-                    console.log(data);
                     for (var i = 0; i < data.data.sessions.length; i++) {
                         var count = 0;
                         var yes = [];
                         var no = [];
+                        var yes_types = [];
+                        var no_types = [];
                         var value = data.data.sessions[i].value;
                         for (var k = 0; k < 2; k++) {
                             for (var j = 0; j < value[k].length; j++) {
@@ -144,9 +185,11 @@
                                     count++;
                                     if (value[k][j].yes) {
                                         yes.push(value[k][j])
+                                        yes_types.push(k);
                                     }
                                     if (value[k][j].no) {
                                         no.push(value[k][j])
+                                        no_types.push(k);
                                     }
                                 }
                             }
@@ -154,6 +197,8 @@
                         value[2]['count'] = count;
                         value[2]['yes_results'] = yes;
                         value[2]['no_results'] = no;
+                        value[2]['yes_types'] = yes_types;
+                        value[2]['no_types'] = no_types;
                     }
                     oldThis.num_pages = data.data.pages;
                     oldThis.results = data.data.sessions;
